@@ -1,0 +1,37 @@
+from pydantic import BaseModel
+from typing import List, Optional
+import wikipediaapi
+
+class InstitutionDetails(BaseModel):
+    founder: Optional[str] = None
+    founded: Optional[str] = None
+    branches: Optional[List[str]] = None
+    number_of_employees: Optional[int] = None
+    summary: Optional[str] = None
+
+def fetch_institution_details(name: str) -> InstitutionDetails:
+    page = wikipediaapi.Wikipedia(user_agent="jupiter", language='en').page(name)
+    if not page.exists():
+        raise ValueError(f"No page found for '{name}'")
+    key_map = {'Founder': 'founder', 'Founded': 'founded', 'Branches': 'branches', 'Number Of Employees': 'number_of_employees'}
+    data = {}
+    for line in page.text.split('\n'):
+        if ':' not in line: continue
+        k, v = [x.strip() for x in line.split(':', 1)]
+        key = key_map.get(k.title())
+        if not key: continue
+        if key == 'branches':
+            data[key] = [b.strip() for b in v.split(',')]
+        elif key == 'number_of_employees':
+            try: data[key] = int(v.replace(',', ''))
+            except: pass
+        else:
+            data[key] = v
+    return InstitutionDetails(**data, summary=page.summary[:500])
+
+name = input("Enter institution name: ").strip()
+if name:
+    d = fetch_institution_details(name)
+    print(f"\nFounder: {d.founder or 'N/A'}\nFounded: {d.founded or 'N/A'}\nBranches: {', '.join(d.branches) if d.branches else 'N/A'}\nEmployees: {d.number_of_employees or 'N/A'}\nSummary: {d.summary or 'N/A'}")
+else:
+    print("⚠️ Please enter a valid institution name.")

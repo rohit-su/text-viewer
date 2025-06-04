@@ -1,0 +1,28 @@
+from langchain import PromptTemplate
+from langchain.llms import Cohere
+import wikipediaapi
+
+cohere_llm = Cohere(cohere_api_key="7bmBuJiNZyQyXSARccSGhudXdgE6cIkKeJkJwGLE", model="command")
+ipc_content = wikipediaapi.Wikipedia(user_agent="IPCChatbot/1.0", language='en').page("Indian Penal Code").text[:3000]
+
+prompt_template = PromptTemplate(
+    input_variables=["question"],
+    template="""
+You are an assistant for the Indian Penal Code (IPC).
+Refer to this IPC content:
+
+{ipc_content}
+
+User: {question}
+Answer in detail, mentioning relevant sections if possible.
+"""
+)
+
+print("👨‍⚖️ IPC Chatbot. Type 'exit' to quit.")
+while True:
+    q = input("❓ Your question: ").strip()
+    if q.lower() == 'exit': 
+        print("Thank You, visit Again ")
+        break
+    prompt = prompt_template.format(ipc_content=ipc_content, question=q)
+    print(cohere_llm.predict(prompt), "\n")
